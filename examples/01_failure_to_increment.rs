@@ -1,6 +1,6 @@
 use std::thread;
 
-const INCREMENT_COUNT: u64 = 1_000_000;
+const INCREMENT_COUNT: u64 = 100_000_000;
 
 fn main() {
     static mut COUNTER: u64 = 0;
