@@ -5,10 +5,10 @@ use std::{
     thread,
 };
 
-const ARRAY_SIZE: usize = 1_000;
-const ITERATIONS: usize = 250_000;
-
 fn main() {
+    const ARRAY_SIZE: usize = 1_000;
+    const ITERATIONS: usize = 250_000;
+
     // Thread A creates the array, fills it with data, and stores it here.
     // Thread B loops until this is non-null, then processes contents of array.
     static ARRAY_PTR: AtomicPtr<[u8; ARRAY_SIZE]> = AtomicPtr::new(ptr::null_mut());
@@ -32,7 +32,7 @@ fn main() {
 
             let mut ptr: *mut [u8; ARRAY_SIZE];
 
-            // Wait for array pointer to be set by thread A.
+            // Wait for array to be published by thread A.
             loop {
                 ptr = ARRAY_PTR.load(Ordering::Acquire);
 

@@ -1,14 +1,15 @@
 use std::{
+    hint::black_box,
     ops::ControlFlow,
     ptr,
     sync::atomic::{AtomicPtr, Ordering},
     thread,
 };
 
-const ARRAY_SIZE: usize = 1_000;
-const ITERATIONS: usize = 250_000;
-
 fn main() {
+    const ARRAY_SIZE: usize = 1_000;
+    const ITERATIONS: usize = 250_000;
+
     // Thread A creates the array, fills it with data, and stores it here.
     // Thread B loops until this is non-null, then processes contents of array.
     static ARRAY_PTR: AtomicPtr<[u8; ARRAY_SIZE]> = AtomicPtr::new(ptr::null_mut());
@@ -23,7 +24,7 @@ fn main() {
 
                 // Then we fill it with 0x01 in every slot.
                 for i in 0..ARRAY_SIZE {
-                    data[i] = 1;
+                    data[i] = black_box(1);
                 }
 
                 // Then we publish this array for the thread B to verify its contents.
@@ -32,7 +33,7 @@ fn main() {
 
             let mut ptr: *mut [u8; ARRAY_SIZE];
 
-            // Wait for array pointer to be set by thread A.
+            // Wait for array to be published by thread A.
             loop {
                 ptr = ARRAY_PTR.load(Ordering::Relaxed);
 
