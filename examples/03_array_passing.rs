@@ -1,5 +1,4 @@
 use std::{
-    hint::black_box,
     ops::ControlFlow,
     ptr,
     sync::atomic::{AtomicPtr, Ordering},
