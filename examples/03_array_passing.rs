@@ -24,7 +24,7 @@ fn main() {
 
                 // Then we fill it with 0x01 in every slot.
                 for i in 0..ARRAY_SIZE {
-                    data[i] = black_box(1);
+                    data[i] = 1;
                 }
 
                 // Then we publish this array for the thread B to verify its contents.
