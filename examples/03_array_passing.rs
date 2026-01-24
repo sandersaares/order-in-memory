@@ -5,24 +5,27 @@ use std::{
     thread,
 };
 
+/// NOTE: This example requires an ARM processor (the invalid code always succeeds on Intel/AMD due to hardware architectural factors).
+
 fn main() {
     const ARRAY_SIZE: usize = 1_000;
+
+    #[cfg(miri)]
+    const ITERATIONS: usize = 1; // Miri is slow, no need for multiple iterations under Miri.
+    #[cfg(not(miri))]
     const ITERATIONS: usize = 250_000;
 
-    // Thread A creates the array, fills it with data, and stores it here.
-    // Thread B loops until this is non-null, then processes contents of array.
+    // Producer creates the array, fills it with data, and stores it here.
+    // Consumer loops until this is non-null, then processes contents of array.
     static ARRAY_PTR: AtomicPtr<[u8; ARRAY_SIZE]> = AtomicPtr::new(ptr::null_mut());
 
-    #[cfg(not(target_arch = "aarch64"))]
-    {
-        eprintln!("NOTE: This example requires an ARM processor for successful demonstration (it always succeeds on Intel/AMD).");
-    }
+    println!("This may take a few minutes. Please wait...");
 
     for i in 0..ITERATIONS {
-        let thread_b = thread::spawn(|| {
-            // We start thread A here, to ensure that thread B starts first.
+        let consumer = thread::spawn(|| {
+            // We start Producer here, to ensure that Consumer starts first.
             // This increases the probability of seeing the desired effects.
-            let _thread_a = thread::spawn(|| {
+            let _producer = thread::spawn(|| {
                 // The array starts with 0x00 values in every slot.
                 let mut data = Box::new([0u8; ARRAY_SIZE]);
 
@@ -31,13 +34,13 @@ fn main() {
                     data[i] = 1;
                 }
 
-                // Then we publish this array for the thread B to verify its contents.
+                // Then we publish this array for the Consumer to verify its contents.
                 ARRAY_PTR.store(Box::into_raw(data), Ordering::Relaxed);
             });
 
             let mut ptr: *mut [u8; ARRAY_SIZE];
 
-            // Wait for array to be published by thread A.
+            // Wait for array to be published by Producer.
             loop {
                 ptr = ARRAY_PTR.load(Ordering::Relaxed);
 
@@ -62,7 +65,7 @@ fn main() {
             }
         });
 
-        match thread_b.join().unwrap() {
+        match consumer.join().unwrap() {
             ControlFlow::Break(()) => {
                 println!("Anomaly was detected on iteration {}/{ITERATIONS}.", i + 1);
                 return;
