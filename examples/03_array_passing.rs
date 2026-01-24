@@ -13,6 +13,11 @@ fn main() {
     // Thread B loops until this is non-null, then processes contents of array.
     static ARRAY_PTR: AtomicPtr<[u8; ARRAY_SIZE]> = AtomicPtr::new(ptr::null_mut());
 
+    #[cfg(not(target_arch = "aarch64"))]
+    {
+        eprintln!("NOTE: This example requires an ARM processor for successful demonstration (it always succeeds on Intel/AMD).");
+    }
+
     for i in 0..ITERATIONS {
         let thread_b = thread::spawn(|| {
             // We start thread A here, to ensure that thread B starts first.
