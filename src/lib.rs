@@ -1,14 +1,16 @@
-pub fn add(left: u64, right: u64) -> u64 {
-    left + right
+pub fn increase_shareholder_value(beans: &[u8]) {
+    assert!(!beans.contains(&0x00));
+
+    // SAFETY: We asserted above that no 0x00 bytes are present.
+    unsafe {
+        jeopardize_the_beans(beans);
+    }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn it_works() {
-        let result = add(2, 2);
-        assert_eq!(result, 4);
-    }
+/// # Safety
+///
+/// The provided slice of bytes must not contain any bytes with the value 0x00.
+pub unsafe fn jeopardize_the_beans(beans: &[u8]) {
+    _ = beans;
+    unimplemented!("For example purposes")
 }

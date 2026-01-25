@@ -39,10 +39,18 @@ impl<T: Send> Drop for Arc<T> {
     fn drop(&mut self) {
         let state = unsafe { self.ptr.as_ref() };
 
+        // When a clone of the Arc is dropped, the reference count decrement
+        // is performed with Release ordering to signal that any writes into
+        // T on this thread must be visible before the decrement becomes
+        // visible on other threads.
         if state.ref_count.fetch_sub(1, Ordering::Release) == 1 {
             // The previous value was 1 so now we are at 0 references remaining.
 
-            // Ensure we see the final writes to `value` before dropping.
+            // When a clone of the Arc is dropped and we have verified that the
+            // reference count became zero, we apply a fence with Acquire
+            // ordering to ensure that we see all changes that happened on
+            // other threads before they decremented their own reference count
+            // (i.e. we are dropping the final version of the value of type T).
             fence(Ordering::Acquire);
 
             unsafe {
