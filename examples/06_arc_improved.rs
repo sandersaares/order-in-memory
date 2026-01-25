@@ -64,6 +64,10 @@ impl<T: Send> Clone for Arc<T> {
     fn clone(&self) -> Self {
         let state = unsafe { self.ptr.as_ref() };
 
+        // The data dependency between the reference count and the inner value of
+        // type T only exists when dropping the object of type T, so we do not
+        // need to define any ordering constraints when incrementing the reference
+        // count because an increment cannot result in a drop of the inner value.
         state.ref_count.fetch_add(1, Ordering::Relaxed);
 
         Self {
