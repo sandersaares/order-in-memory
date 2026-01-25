@@ -37,6 +37,10 @@ impl<T: Send> Arc<T> {
 
 impl<T: Send> Drop for Arc<T> {
     fn drop(&mut self) {
+        // SAFETY: The state was created in Arc::new and is valid as long as
+        // there is at least one Arc instance pointing to it. We never create
+        // &mut exclusive references to it so it is always valid to create a
+        // & shared reference to it.
         let state = unsafe { self.ptr.as_ref() };
 
         // When a clone of the Arc is dropped, the reference count decrement
@@ -53,6 +57,11 @@ impl<T: Send> Drop for Arc<T> {
             // (i.e. we are dropping the final version of the value of type T).
             fence(Ordering::Acquire);
 
+            // SAFETY: This pointer was allocated by Box::into_raw in Arc::new
+            // and we have verified that the reference count is now zero, so
+            // it is safe to deallocate it here - nobody else can use it again.
+            // We no longer reference the "state" variable after this point,
+            // ensuring that this function does not attempt to reference this data.
             unsafe {
                 drop(Box::from_raw(self.ptr.as_ptr()));
             }
@@ -62,6 +71,10 @@ impl<T: Send> Drop for Arc<T> {
 
 impl<T: Send> Clone for Arc<T> {
     fn clone(&self) -> Self {
+        // SAFETY: The state was created in Arc::new and is valid as long as
+        // there is at least one Arc instance pointing to it. We never create
+        // &mut exclusive references to it so it is always valid to create a
+        // & shared reference to it.
         let state = unsafe { self.ptr.as_ref() };
 
         // The data dependency between the reference count and the inner value of
